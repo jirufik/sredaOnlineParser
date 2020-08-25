@@ -1,0 +1,53 @@
+{
+  "name": "sredaOnlineParser",
+  "version": "1.0.0",
+  "description": "sredaonline parser",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "NODE_ENV=production babel src --out-dir dist",
+    "start": "NODE_ENV=production node dist/index.js",
+    "start-dev": "npx babel-node src/index.js",
+    "test-log": "npx babel-node src/log/log.js",
+    "test-df": "npx babel-node src/dialogflow/dialogflow.js",
+    "create-db": "npx babel-node ./src/db/runScripts/createDb.js",
+    "rebuild-db": "REBUILD_DB=true npx babel-node ./src/db/runScripts/createDb.js",
+    "update-db": "UPDATE_DB=true npx babel-node ./src/db/runScripts/createDb.js"
+  },
+  "keywords": [
+    "jrf"
+  ],
+  "author": {
+    "name": "jirufik",
+    "url": "https://github.com/sredaOnlineParser"
+  },
+  "maintainers": [
+    {
+      "name": "jirufik",
+      "url": "https://github.com/sredaOnlineParser"
+    }
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=8"
+  },
+  "dependencies": {
+    "nightmare": "^3.0.2",
+    "jrf-path-exists": "^1.0.4",
+    "pg": "^8.3.2",
+    "lodash": "^4.17.20",
+    "moment": "^2.27.0",
+    "axios": "^0.20.0",
+    "@google-cloud/dialogflow": "^3.2.0",
+    "jrf-graylog": "^1.0.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.11.4",
+    "@babel/preset-env": "^7.11.0",
+    "@babel/cli": "^7.10.5",
+    "@babel/node": "^7.10.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jirufik/sredaOnlineParser"
+  }
+}
