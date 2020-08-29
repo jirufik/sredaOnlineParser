@@ -98,7 +98,7 @@ const MONTHS = {
 
 };
 
-async function getScheduleData(n) {
+async function getScheduleData({n, graylog, processId}) {
 
   const res = await n.evaluate(() => {
 
@@ -232,7 +232,7 @@ function getDates({months, daysOfMonth, startDayOfMonth, endDayOfMonth, year}) {
 
 }
 
-async function getPeriod(textMessage) {
+async function getPeriod({textMessage, graylog, processId}) {
 
   const sessionId = 'sredaOnline';
   let res = await df.sendTextMessage({textMessage, sessionId});
@@ -251,7 +251,11 @@ async function getPeriod(textMessage) {
   const year = pathExists(params, 'year.stringValue');
 
   const noPeriod = action !== 'period';
-  if (noPeriod) return;
+  if (noPeriod) {
+    const data = {textMessage, res};
+    graylog.warning({message: `The text does not contain period data`, data, processId});
+    return;
+  }
 
   const months = getMonths({startMonth, endMonth});
   const dates = getDates({months, daysOfMonth, startDayOfMonth, endDayOfMonth, year});
@@ -270,7 +274,7 @@ function getHall(text) {
 
 }
 
-async function getFilmName(nameFilm) {
+async function getFilmName({nameFilm, graylog, processId}) {
 
   const sessionId = 'sredaOnline';
   const textMessage = `filmName ${nameFilm}`;
@@ -280,7 +284,11 @@ async function getFilmName(nameFilm) {
 
   const action = pathExists(res, 'action');
   const noFilmName = action !== 'filmName';
-  if (noFilmName) return;
+  if (noFilmName) {
+    const data = {textMessage, res};
+    graylog.warning({message: `The text does not contain film data`, data, processId});
+    return;
+  }
 
   const cinemaType = pathExists(res, 'parameters.fields.cinemaType.stringValue');
   let filmName = pathExists(res, 'parameters.fields.nameFilm.stringValue', '');
@@ -326,7 +334,7 @@ function getTickets({cost, date}) {
 
 }
 
-async function fillFilms({films, hall, period, tickets}) {
+async function fillFilms({films, hall, period, tickets, graylog, processId}) {
 
   while (tickets.length) {
 
@@ -337,7 +345,7 @@ async function fillFilms({films, hall, period, tickets}) {
 
     if (!films[keyFilm]) {
 
-      const res = await getFilmName(nameFilm);
+      const res = await getFilmName({nameFilm, graylog, processId});
       const filmName = res.filmName;
       const age = res.age;
       const cinemaType = res.cinemaType;
@@ -368,11 +376,16 @@ async function fillFilms({films, hall, period, tickets}) {
 
 }
 
-async function getFilms(n) {
+async function getFilms({n, graylog, processId}) {
 
-  const data = await getScheduleData(n);
+  const data = await getScheduleData({n, graylog, processId});
 
-  if (!data) return;
+  if (!data) {
+    graylog.warning({message: 'No schedule data in VK', processId})
+    return;
+  }
+
+  graylog.info({message: 'VK html data', data, processId});
 
   let hall, period;
   const films = {};
@@ -386,18 +399,22 @@ async function getFilms(n) {
         continue;
       }
 
-      period = await getPeriod(el.value);
+      period = await getPeriod({textMessage: el.value, graylog, processId});
       if (period) {
         continue;
       }
+
+      graylog.warning({message: `Failed to process text: ${el.value}`, processId});
 
     }
 
     const tickets = el.value;
 
-    await fillFilms({films, hall, period, tickets});
+    await fillFilms({films, hall, period, tickets, graylog, processId});
 
   }
+
+  graylog.info({message: 'VK parser data', films, processId});
 
   return films;
 
@@ -416,7 +433,7 @@ const vkParse = async ({graylog, processId}) => {
     let films;
     try {
 
-      films = await getFilms(n);
+      films = await getFilms({n, graylog, processId});
       return films;
 
     } catch (error) {

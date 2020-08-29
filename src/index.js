@@ -161,6 +161,8 @@ async function updateFilms() {
       const info = await tmdb.getInfo({name, year});
       film.tmdb = info;
 
+      graylog.info({message: `film: ${name}`, film, processId});
+
       await addFilm({film, filmsModel, processId});
       await addSchedule({film, scheduleModel, processId});
 
