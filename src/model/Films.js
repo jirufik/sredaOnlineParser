@@ -151,6 +151,23 @@ export default class Films {
 
   }
 
+  async getCodeForMultCinema({name}) {
+
+    const text = `
+    with t as (select (select code from films where name = '${name}') AS found_code)
+    select found_code, 
+    (case when found_code is not null then found_code
+    else (select coalesce(max(code) + 1, 1) as code from films where code < 1000)
+    end) as code
+    from t;
+    `;
+
+    const res = await this.postgres.query({text});
+
+    return pathExists(res, 'rows[0].code');
+
+  }
+
   _update({film, name, year, tagline, country, age, about, genre, producer, img, idTmdb, vote, runtime, originalName}) {
 
     let update = film.name.toLowerCase() !== name.toLowerCase();
