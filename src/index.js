@@ -9,6 +9,7 @@ import TMDB from "./tmdb";
 import generateId from "./utils/generateId";
 import vkParse from "./parser/vk";
 import moment from "moment";
+import isMultCinema from "./utils/isMultCinema";
 
 const config = require("../config");
 const graylog = new Graylog({
@@ -22,20 +23,22 @@ const TIMEOUT = config.timeouts.updateFilms;
 
 async function addFilm({film, filmsModel, processId}) {
 
-  const code = pathExists(film, 'tmdb.id');
+  const prefix = film.tmdb ? 'tmdb.' : '';
+
+  const code = pathExists(film, `${prefix}id`);
   const name = pathExists(film, 'filmName');
   const year = pathExists(film, 'year', moment().format('YYYY'));
-  const tagline = pathExists(film, 'tmdb.tagline');
-  const country = pathExists(film, 'tmdb.country');
+  const tagline = pathExists(film, `${prefix}tagline`);
+  const country = pathExists(film, `${prefix}country`);
   const age = pathExists(film, 'age');
-  const about = pathExists(film, 'tmdb.about');
-  const genre = pathExists(film, 'tmdb.genre');
-  const producer = pathExists(film, 'tmdb.producer');
-  const img = pathExists(film, 'tmdb.img');
-  const idTmdb = pathExists(film, 'tmdb.id');
-  const vote = pathExists(film, 'tmdb.vote');
-  const runtime = pathExists(film, 'tmdb.runtime');
-  const originalName = pathExists(film, 'tmdb.originalName');
+  const about = pathExists(film, `${prefix}about`);
+  const genre = pathExists(film, `${prefix}genre`);
+  const producer = pathExists(film, `${prefix}producer`);
+  const img = pathExists(film, `${prefix}img`);
+  const idTmdb = pathExists(film, `${prefix}id`, 0);
+  const vote = pathExists(film, `${prefix}vote`);
+  const runtime = pathExists(film, `${prefix}runtime`);
+  const originalName = pathExists(film, `${prefix}originalName`);
 
   const data = {
     code,
@@ -89,7 +92,9 @@ async function addFilm({film, filmsModel, processId}) {
 
 async function addSchedule({film, scheduleModel, processId}) {
 
-  const filmCode = pathExists(film, 'tmdb.id');
+  const prefix = film.tmdb ? 'tmdb.' : '';
+
+  const filmCode = pathExists(film, `${prefix}id`);
   const name = pathExists(film, 'filmName');
   const schedule = pathExists(film, 'schedule', []);
 
@@ -115,6 +120,48 @@ async function addSchedule({film, scheduleModel, processId}) {
       });
 
     }
+
+  }
+
+}
+
+async function processNotFoundInTMDB({film, filmsModel, processId}) {
+
+  const name = pathExists(film, 'filmName', '');
+  if (!isMultCinema(name)) {
+
+    graylog.error({
+      message: `Film not found; name: ${name}`,
+      processId,
+      film
+    });
+
+    return;
+
+  }
+
+  try {
+
+    const code = await filmsModel.getCodeForMultCinema({name});
+    film.id = code;
+    film.age = 0;
+    film.about = 'Мультики для юных зрителей';
+    film.img = 'https://st.kp.yandex.net/im/poster/3/5/2/kinopoisk.ru-MULT-v-kino-116-Leto-prishlo-3522901.jpg';
+    film.vote = 0;
+    film.runtime = 0;
+    film.tagline = '';
+    film.originalName = '';
+    film.country = ['Россия'];
+    film.genre = ['Мультфильм', 'Детский'];
+
+  } catch (error) {
+
+    graylog.error({
+      message: `Error in processNotFoundInTMDB; film name: ${name}`,
+      processId,
+      film,
+      error
+    });
 
   }
 
@@ -159,7 +206,12 @@ async function updateFilms() {
       const name = film.filmName;
       const year = moment().format('YYYY');
       const info = await tmdb.getInfo({name, year});
-      film.tmdb = info;
+
+      if (info) {
+        film.tmdb = info;
+      } else {
+        await processNotFoundInTMDB({film, filmsModel, processId});
+      }
 
       graylog.info({message: `film: ${name}`, film, processId});
 
