@@ -245,10 +245,10 @@ async function updateFilms() {
 
 }
 
-// Promise.resolve()
-//   .then(updateFilms)
-//   .catch(e => console.log(e));
+Promise.resolve()
+  .then(updateFilms)
+  .catch(e => console.log(e));
 
-setInterval(async () => {
-  await updateFilms();
-}, TIMEOUT);
+// setInterval(async () => {
+//   await updateFilms();
+// }, TIMEOUT);

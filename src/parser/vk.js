@@ -341,7 +341,7 @@ async function fillFilms({films, hall, period, tickets, graylog, processId}) {
     const time = tickets.shift();
     const nameFilm = tickets.shift();
     const keyFilm = nameFilm.replace(/ /g, '').replace(/\u00A0/g, '');
-    const cost = tickets.shift();
+    let cost = tickets.shift();
 
     if (!films[keyFilm]) {
 
@@ -357,6 +357,10 @@ async function fillFilms({films, hall, period, tickets, graylog, processId}) {
     for (const day of period) {
 
       const date = moment(`${day} ${time}`, 'DD.MM.YYYY HH:mm');
+
+      const noCost = keyFilm.includes('Антебеллум2D') && !cost;
+      if (noCost) cost = '280,00р.';
+
       const tickets = getTickets({cost, date});
 
       for (const ticket of tickets) {
@@ -425,7 +429,10 @@ const vkParse = async ({graylog, processId}) => {
   let n;
   try {
 
-    const nightmare = Nightmare({show: false});
+    const nightmare = Nightmare({
+      show: false,
+      electronPath: require('electron')
+    });
     n = nightmare.goto(URL);
     await n.wait(TIMEOUT);
 
