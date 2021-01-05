@@ -77,7 +77,15 @@ export default class TMDB {
 
     if (!name) return;
 
-    let film = await this.findMovie({query: name, year});
+    let film;
+
+    for (let i = 0; i < 2; i++) {
+      film = await this.findMovie({query: name, year});
+      if (film) {
+        break;
+      }
+      year = year - 1;
+    }
 
     if (!film) {
 

@@ -1,15 +1,13 @@
 import ConnectorPG from "./db/conectorPG";
 import pathExists from 'jrf-path-exists'
-import Halls from "./model/Halls";
-import Tickets from "./model/Tickets";
 import Films from "./model/Films";
 import Schedules from "./model/Schedules";
 import Graylog from "jrf-graylog";
 import TMDB from "./tmdb";
 import generateId from "./utils/generateId";
-import vkParse from "./parser/vk";
 import moment from "moment";
 import isMultCinema from "./utils/isMultCinema";
+import {PictureParser} from "./parser/prcture";
 
 const config = require("../config");
 const graylog = new Graylog({
@@ -189,7 +187,8 @@ async function updateFilms() {
 
     graylog.info({message: 'start parse vk sreda online', processId});
 
-    const films = await vkParse({graylog, processId});
+    const parser = new PictureParser({logger: graylog, processId});
+    const films = await parser.parseWebImages();
 
     const endParse = Date.now();
     let time = endParse - start;

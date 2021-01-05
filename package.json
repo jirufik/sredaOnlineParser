@@ -7,6 +7,7 @@
     "build": "NODE_ENV=production babel src --out-dir dist",
     "start": "NODE_ENV=production node dist/index.js",
     "start-dev": "npx babel-node src/index.js",
+    "test-parser": "npx babel-node src/parser/prcture.js",
     "test-log": "npx babel-node src/log/log.js",
     "test-df": "npx babel-node src/dialogflow/dialogflow.js",
     "create-db": "npx babel-node ./src/db/runScripts/createDb.js",
@@ -31,7 +32,6 @@
     "node": ">=8"
   },
   "dependencies": {
-    "nightmare": "^3.0.2",
     "jrf-path-exists": "^1.0.4",
     "pg": "^8.4.1",
     "lodash": "^4.17.20",
@@ -39,8 +39,7 @@
     "axios": "^0.21.0",
     "@google-cloud/dialogflow": "^3.3.0",
     "@google-cloud/vision": "^2.1.2",
-    "jrf-graylog": "^1.0.3",
-    "electron": "^10.1.5"
+    "jrf-graylog": "^1.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.12.3",
