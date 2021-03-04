@@ -49,6 +49,10 @@ export default class TMDB {
     query = processUrlQuery({query});
     url += `&year=${year}&language=${lang}&query=${encodeURIComponent(query)}&page=${page}&include_adult=${adult}`;
 
+    if (query.includes('пончары')) {
+      url = `https://api.themoviedb.org/3/search/movie?api_key=${this.apiKey}&query=%D0%BF%D0%BE%D0%BD%D1%87%D0%B0%D1%80%D1%8B`;
+    }
+
     const res = await this.execAxios({url});
     const films = pathExists(res, 'results', []);
     if (films.length === 1) return films[0];

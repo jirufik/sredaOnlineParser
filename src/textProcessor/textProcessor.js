@@ -104,29 +104,94 @@ export class TextProcessor {
   async processTexts(texts) {
 
     texts = this._fixSessionTimes(texts);
+    console.log(texts);
 
     const films = {};
-    for (const text of texts) {
+    for (let text of texts) {
+      if (text === '*' || text === '00') {
+        continue;
+      }
+
+      text = text.replace('29, 31 января; 2 февраля', '2 февраля');
+
       await this._processText(text, films);
     }
+
+    // return {};
 
     return films;
   }
 
   _fixSessionTimes(texts) {
-    return [...texts.map(text => text.replace(/J/g, '1'))];
+    return [...texts.map(text => {
+      text.replace(/J/g, '1');
+      text.replace(/і/g, '1');
+      return text;
+    })];
   }
 
   async _processText(text, films) {
     text = text.split('\n');
     text = this._deleteBadWords(text);
-    this._logger.info({message: 'Text before delete bad word', text, processId: this._processId});
+
+    this._logger.info({message: 'Text after delete bad word', text, processId: this._processId});
     await this._getFilms(text, films);
   }
 
   _deleteBadWords(text) {
     for (let i = 0; i < text.length; i++) {
-      const suggestion = text[i];
+      let suggestion = text[i];
+
+      if (suggestion === ':25 Последний богатырь 2 6+: 150/180 руб.') {
+        suggestion = '11:25 Последний богатырь 2 6+: 150/180 руб.';
+        text[i] = suggestion;
+      }
+
+      if (suggestion === '1:50 Последний богатырь 2 6+; 180 руб.') {
+        suggestion = '11:50 Последний богатырь 2 6+; 180 руб.';
+        text[i] = suggestion;
+      }
+
+      if (suggestion === 'і3:00 Конь Юлий и большие скачки 6+; 150/180 руб.') {
+        suggestion = '13:00 Конь Юлий и большие скачки 6+; 150/180 руб.';
+        text[i] = suggestion;
+      }
+
+      if (suggestion === '43:25 Душа 6+; 200/280 руб.') {
+        suggestion = '11:25 Душа 6+; 200/280 руб.';
+        text[i] = suggestion;
+      }
+
+      if (suggestion === '11:25 Душа 6+; 200/280 руб.') {
+        suggestion = '13:25 Душа 6+; 200/280 руб.';
+        text[i] = suggestion;
+      }
+
+      if (suggestion === 'Gil:40 Душа 6+; 150/180 руб.') {
+        suggestion = '11:40 Душа 6+; 150/180 руб.';
+        text[i] = suggestion;
+      }
+
+      if (suggestion === '1.1:55 Душа 6+; 150/180 руб.') {
+        suggestion = '11:55 Душа 6+; 150/180 руб.';
+        text[i] = suggestion;
+      }
+
+      if (suggestion === '20:50 Приворот. Чёрное венчание18+; 280 руб.') {
+        suggestion = '20:50 Приворот. Чёрное венчание 18+; 280 руб.';
+        text[i] = suggestion;
+      }
+
+      if (suggestion === '16:20 Родные12+; 280 руб.') {
+        suggestion = '16:20 Родные 12+; 280 руб.';
+        text[i] = suggestion;
+      }
+
+      if (suggestion === '-14:20 Гуляй Вася! Свидание на Бали16+;180 руб') {
+        suggestion = '14:20 Гуляй Вася! Свидание на Бали 16+; 180 руб';
+        text[i] = suggestion;
+      }
+
 
       const isBadSuggestion = this._isBadSuggestion(suggestion);
       if (!isBadSuggestion) {
@@ -213,7 +278,7 @@ export class TextProcessor {
 
   _getHall(text, currentHall) {
 
-    const isNotHall = !text.trim().toLowerCase().includes('зал');
+    const isNotHall = !text.trim().toLowerCase().includes('зал') && !text.trim().toLowerCase().includes('зоал');
     if (isNotHall) {
       return currentHall;
     }
@@ -234,13 +299,14 @@ export class TextProcessor {
 
   async _getPeriod(textMessage) {
 
+    textMessage = textMessage.replace(/\*/g, '');
     const sessionId = 'sredaOnline';
     let res = await df.sendTextMessage({textMessage, sessionId});
 
     res = pathExists(res, '[0].queryResult');
     const action = pathExists(res, 'action');
     const params = pathExists(res, 'parameters.fields');
-
+    console.log(params)
     const startMonth = pathExists(params, 'startMonth.stringValue');
     const endMonth = pathExists(params, 'endMonth.stringValue');
 
@@ -258,7 +324,10 @@ export class TextProcessor {
     }
 
     const months = this._getMonths({startMonth, endMonth});
-    const dates = this._getDates({months, daysOfMonth, startDayOfMonth, endDayOfMonth, year});
+    let dates = this._getDates({months, daysOfMonth, startDayOfMonth, endDayOfMonth, year});
+
+    // dates = dates.filter(date=> date !== '05.02.2021');
+    console.log(dates);
 
     return dates;
 
@@ -416,11 +485,11 @@ export class TextProcessor {
 
     let nameFilm = this._getFilmInfoPart({params, namePart: 'nameFilm'});
 
-    if (nameFilm  === 'Реальные пацаны') {
+    if (nameFilm === 'Реальные пацаны') {
       nameFilm = 'Реальные пацаны против зомби';
     }
 
-    if (nameFilm  === 'Реальные пацаны') {
+    if (nameFilm === 'Реальные пацаны') {
       nameFilm = 'Реальные пацаны против зомби';
     }
 
@@ -428,8 +497,32 @@ export class TextProcessor {
       nameFilm = 'Последний богатырь';
     }
 
-    if (nameFilm === 'Последний богатырь') {
+    if (nameFilm === 'Последний богатырь' || nameFilm === 'Последний богатырь 2') {
       nameFilm = 'Последний богатырь: корень зла';
+    }
+
+    if (nameFilm === 'Конь ЮОлий и большие скачки') {
+      nameFilm = 'Конь Юлий и большие скачки';
+    }
+
+    if (nameFilm === 'Птица в клетке. Заражение') {
+      nameFilm = 'Птица в клетке';
+    }
+
+    if (nameFilm === 'Заклятъе. Другая сторона') {
+      nameFilm = 'Заклятье: Другая сторона';
+    }
+
+    if (nameFilm === 'Закляье. Другая сторона') {
+      nameFilm = 'Заклятье: Другая сторона';
+    }
+
+    if (nameFilm === 'Пончары') {
+      nameFilm = 'Пончары. Глобальное закругление';
+    }
+
+    if (nameFilm === 'Tом и Джерри') {
+      nameFilm = 'Том и Джерри';
     }
 
     if (!sessionTime) {
